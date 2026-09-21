@@ -1,16 +1,18 @@
 "use client";
 
-import { useState } from "react";
+import { useRef } from "react";
 import Link from "next/link";
 import { Menu } from "lucide-react";
 import { logoutAction } from "@/lib/actions/auth";
 import type { SessionUser } from "@/lib/auth";
 import { Button, buttonVariants } from "@/components/ui/button";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 
 export function MobileNav({ session }: { session: SessionUser | null }) {
-  const [open, setOpen] = useState(false);
+  const detailsRef = useRef<HTMLDetailsElement>(null);
+  const close = () => {
+    if (detailsRef.current) detailsRef.current.open = false;
+  };
   const links = [
     { href: "/how-it-works", label: "How it works" },
     { href: "/charities", label: "Charities" },
@@ -23,42 +25,44 @@ export function MobileNav({ session }: { session: SessionUser | null }) {
   ];
 
   return (
-    <Sheet open={open} onOpenChange={setOpen}>
-      <SheetTrigger className={cn(buttonVariants({ variant: "ghost", size: "icon" }), "md:hidden")}>
+    <details ref={detailsRef} className="relative md:hidden">
+      <summary
+        className={cn(
+          buttonVariants({ variant: "ghost", size: "icon" }),
+          "list-none [&::-webkit-details-marker]:hidden"
+        )}
+      >
         <Menu />
         <span className="sr-only">Open menu</span>
-      </SheetTrigger>
-      <SheetContent side="right" className="w-72">
-        <SheetHeader>
-          <SheetTitle>digital.HEROES</SheetTitle>
-        </SheetHeader>
-        <div className="flex flex-col gap-3 px-4">
+      </summary>
+      <div className="absolute right-0 top-[calc(100%+0.5rem)] z-50 w-[min(18rem,calc(100vw-2rem))] rounded-2xl border border-white/15 bg-popover p-3 shadow-2xl">
+        <nav className="flex flex-col gap-1">
           {links.map((link) => (
             <Link
               key={link.href}
               href={link.href}
-              onClick={() => setOpen(false)}
-              className="rounded-lg px-2 py-2 text-sm hover:bg-muted"
+              onClick={close}
+              className="rounded-lg px-3 py-2 text-sm hover:bg-muted"
             >
               {link.label}
             </Link>
           ))}
-          <Link
-            href={session?.role === "ADMIN" ? "/admin" : session ? "/dashboard" : "/signup"}
-            onClick={() => setOpen(false)}
-            className={cn(buttonVariants(), "mt-2")}
-          >
-            {session?.role === "ADMIN" ? "Control room" : session ? "Your desk" : "Subscribe"}
-          </Link>
-          {session ? (
-            <form action={logoutAction}>
-              <Button variant="ghost" className="w-full" type="submit">
-                Sign out
-              </Button>
-            </form>
-          ) : null}
-        </div>
-      </SheetContent>
-    </Sheet>
+        </nav>
+        <Link
+          href={session?.role === "ADMIN" ? "/admin" : session ? "/dashboard" : "/signup"}
+          onClick={close}
+          className={cn(buttonVariants(), "mt-3 w-full")}
+        >
+          {session?.role === "ADMIN" ? "Control room" : session ? "Your desk" : "Subscribe"}
+        </Link>
+        {session ? (
+          <form action={logoutAction} className="mt-2">
+            <Button variant="ghost" className="w-full" type="submit">
+              Sign out
+            </Button>
+          </form>
+        ) : null}
+      </div>
+    </details>
   );
 }
