@@ -4,13 +4,13 @@
   "private": true,
   "scripts": {
     "dev": "tsx prisma/ensure.ts && next dev --port 4327 --hostname 0.0.0.0",
-    "build": "prisma generate && next build",
+    "build": "prisma migrate deploy && prisma generate && next build",
     "start": "next start --port 4327 --hostname 0.0.0.0",
     "lint": "eslint",
     "test": "tsx --test lib/*.test.ts",
-    "db:push": "prisma db push",
+    "db:migrate": "prisma migrate deploy",
     "db:seed": "tsx prisma/seed.ts",
-    "db:reset": "prisma db push --force-reset && tsx prisma/seed.ts",
+    "db:reset": "prisma migrate reset --force",
     "postinstall": "prisma generate"
   },
   "prisma": {

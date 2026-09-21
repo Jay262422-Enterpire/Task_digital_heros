@@ -13,19 +13,22 @@ The look leads with charitable impact — dark, editorial, gold and rose — not
 - Upload winner proof; admins verify and mark payouts paid
 - Admins manage users, scores, subscriptions, charities, draw simulation/publish, winners, and reports
 
-Payments are a **mock Stripe** checkout so the slice runs without PCI keys. The data layer is **SQLite via Prisma**, shaped so it can move to Supabase/Postgres later.
+Payments are a **mock Stripe** checkout so the slice runs without PCI keys. Prisma talks to **PostgreSQL** (Supabase on Vercel). SQLite is no longer supported.
 
 ## Run locally
 
 ```bash
 npm install
 cp .env.example .env
+# Set DATABASE_URL and DIRECT_URL to PostgreSQL (local Postgres or your Supabase URIs).
+npx prisma migrate deploy
+npx prisma db seed
 npm run dev
 ```
 
-Open [http://127.0.0.1:4327](http://127.0.0.1:4327). The first `npm run dev` generates Prisma client, pushes the schema, and seeds demo data.
+Open [http://127.0.0.1:4327](http://127.0.0.1:4327). `npm run dev` generates the client and runs `prisma migrate deploy`; it will exit if `DATABASE_URL` is not a Postgres URI.
 
-Reset demo data anytime:
+Reset demo data anytime (destructive):
 
 ```bash
 npm run db:reset
@@ -49,4 +52,4 @@ Riley already has a verified, paid 4-match from August. Alex is lapsed.
 
 ## Stack
 
-Next.js 16 (App Router) · TypeScript · Tailwind v4 · shadcn/ui · Prisma · SQLite · jose sessions · bcryptjs
+Next.js 16 (App Router) · TypeScript · Tailwind v4 · shadcn/ui · Prisma · PostgreSQL · jose sessions · bcryptjs
