@@ -52,10 +52,10 @@ export function SiteHeader({ session }: { session: SessionUser | null }) {
             </Link>
           )}
           <Link
-            href={session ? "/subscribe" : "/signup"}
+            href={session?.role === "ADMIN" ? "/admin" : session ? "/dashboard" : "/signup"}
             className={cn(buttonVariants(), "rounded-full px-4")}
           >
-            Subscribe
+            {session?.role === "ADMIN" ? "Control room" : session ? "Your desk" : "Subscribe"}
           </Link>
         </div>
         <MobileNav session={session} />

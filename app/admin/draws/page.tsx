@@ -25,6 +25,15 @@ export default async function AdminDrawsPage() {
         jackpotCarryPence: pool.carryPence,
       },
     });
+  } else if (current.status !== "PUBLISHED") {
+    const pool = await activePrizePoolPence();
+    current = await prisma.draw.update({
+      where: { id: current.id },
+      data: {
+        prizePoolPence: pool.totalPence,
+        jackpotCarryPence: pool.carryPence,
+      },
+    });
   }
 
   const tickets = await eligibleTickets();

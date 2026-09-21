@@ -314,8 +314,8 @@ async function main() {
       type: "RANDOM",
       status: "DRAFT",
       numbersJson: "[]",
-      prizePoolPence: 0,
-      jackpotCarryPence: 768, // 40% of August pool unclaimed as 5-match
+      prizePoolPence: 2568,
+      jackpotCarryPence: 768,
     },
   });
 

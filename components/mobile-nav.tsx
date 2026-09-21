@@ -44,11 +44,11 @@ export function MobileNav({ session }: { session: SessionUser | null }) {
             </Link>
           ))}
           <Link
-            href={session ? "/subscribe" : "/signup"}
+            href={session?.role === "ADMIN" ? "/admin" : session ? "/dashboard" : "/signup"}
             onClick={() => setOpen(false)}
             className={cn(buttonVariants(), "mt-2")}
           >
-            Subscribe
+            {session?.role === "ADMIN" ? "Control room" : session ? "Your desk" : "Subscribe"}
           </Link>
           {session ? (
             <form action={logoutAction}>
