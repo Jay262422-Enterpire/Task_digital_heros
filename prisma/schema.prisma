@@ -1,0 +1,137 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  name         String
+  role         String   @default("USER") // USER | ADMIN
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  subscription  Subscription?
+  charityChoice CharityChoice?
+  scores        Score[]
+  donations     Donation[]
+  wins          Win[]
+}
+
+model Subscription {
+  id            String    @id @default(cuid())
+  userId        String    @unique
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plan          String // MONTHLY | YEARLY
+  status        String // ACTIVE | CANCELED | LAPSED | INACTIVE
+  amountPence   Int
+  renewalDate   DateTime
+  canceledAt    DateTime?
+  mockPaymentId String
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model Charity {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  name        String
+  tagline     String
+  description String
+  cause       String // junior | environment | health | veterans | community
+  accent      String // CSS color used for the illustrated cover
+  featured    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  events    CharityEvent[]
+  choices   CharityChoice[]
+  donations Donation[]
+}
+
+model CharityEvent {
+  id          String   @id @default(cuid())
+  charityId   String
+  charity     Charity  @relation(fields: [charityId], references: [id], onDelete: Cascade)
+  title       String
+  happensOn   DateTime
+  location    String
+  description String
+}
+
+model CharityChoice {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  charityId String
+  charity   Charity  @relation(fields: [charityId], references: [id], onDelete: Restrict)
+  percent   Int // 10–90 of subscription fee
+  updatedAt DateTime @updatedAt
+}
+
+model Score {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  value     Int // Stableford 1–45
+  playedOn  DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, playedOn])
+  @@index([userId, playedOn])
+}
+
+model Draw {
+  id                String    @id @default(cuid())
+  year              Int
+  month             Int // 1–12
+  type              String // RANDOM | ALGORITHMIC
+  status            String    @default("DRAFT") // DRAFT | SIMULATED | PUBLISHED
+  numbersJson       String    @default("[]") // JSON number[]
+  prizePoolPence    Int       @default(0)
+  jackpotCarryPence Int       @default(0)
+  simulatedAt       DateTime?
+  publishedAt       DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  wins              Win[]
+
+  @@unique([year, month])
+}
+
+model Win {
+  id            String    @id @default(cuid())
+  drawId        String
+  draw          Draw      @relation(fields: [drawId], references: [id], onDelete: Cascade)
+  userId        String
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  matchCount    Int // 3 | 4 | 5
+  amountPence   Int
+  payoutStatus  String    @default("PENDING") // PENDING | PAID
+  proofPath     String?
+  proofStatus   String    @default("NONE") // NONE | SUBMITTED | APPROVED | REJECTED
+  proofNote     String?
+  paidAt        DateTime?
+  reviewedAt    DateTime?
+  createdAt     DateTime  @default(now())
+
+  @@index([userId])
+}
+
+model Donation {
+  id        String   @id @default(cuid())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  charityId String
+  charity   Charity  @relation(fields: [charityId], references: [id], onDelete: Restrict)
+  email     String
+  amountPence Int
+  message   String?
+  createdAt DateTime @default(now())
+}
