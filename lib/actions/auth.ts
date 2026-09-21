@@ -81,24 +81,30 @@ export async function loginAction(
     return { error: "Enter your email and password." };
   }
 
-  const user = await prisma.user.findUnique({
-    where: { email: parsed.data.email.toLowerCase() },
-  });
-  if (!user) {
-    return { error: "Those details did not match an account." };
+  let role: "USER" | "ADMIN" = "USER";
+  try {
+    const user = await prisma.user.findUnique({
+      where: { email: parsed.data.email.toLowerCase() },
+    });
+    if (!user) {
+      return { error: "Those details did not match an account." };
+    }
+    const ok = await bcrypt.compare(parsed.data.password, user.passwordHash);
+    if (!ok) {
+      return { error: "Those details did not match an account." };
+    }
+    role = user.role === "ADMIN" ? "ADMIN" : "USER";
+    await setSessionCookie({
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      role,
+    });
+  } catch (error) {
+    console.error("loginAction failed", error);
+    return { error: "Sign-in could not reach the database. Try again in a moment." };
   }
-  const ok = await bcrypt.compare(parsed.data.password, user.passwordHash);
-  if (!ok) {
-    return { error: "Those details did not match an account." };
-  }
-
-  await setSessionCookie({
-    id: user.id,
-    email: user.email,
-    name: user.name,
-    role: user.role === "ADMIN" ? "ADMIN" : "USER",
-  });
-  redirect(user.role === "ADMIN" ? "/admin" : "/dashboard");
+  redirect(role === "ADMIN" ? "/admin" : "/dashboard");
 }
 
 export async function logoutAction() {
