@@ -8,8 +8,10 @@ import { SubmitButton } from "@/components/submit-button";
 
 export function SubscribeForm({
   plans,
+  stripeReady,
 }: {
   plans: { id: string; label: string; amountPence: number; note: string }[];
+  stripeReady: boolean;
 }) {
   const [state, action] = useActionState(subscribeAction, {} as SubState);
   return (
@@ -34,12 +36,12 @@ export function SubscribeForm({
       ))}
       <div className="md:col-span-2">
         <SubmitButton className="h-11 w-full rounded-full sm:w-auto sm:px-8">
-          Pay with mock Stripe
+          Continue to Stripe
         </SubmitButton>
         <p className="mt-3 text-xs text-muted-foreground">
-          No card is charged. This environment uses a PCI-shaped mock: a successful “payment”
-          activates the subscription immediately. Swap in Stripe keys later without changing the
-          rest of the flow.
+          {stripeReady
+            ? "You will pay on Stripe Checkout. Your plan stays inactive until Stripe confirms the payment."
+            : "Stripe keys are not set in this environment. The button will not activate a plan or take a card."}
         </p>
       </div>
     </form>

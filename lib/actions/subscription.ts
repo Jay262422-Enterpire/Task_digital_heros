@@ -7,6 +7,8 @@ import { getSession } from "@/lib/auth";
 import { PLANS } from "@/lib/config";
 import { addCadence } from "@/lib/money";
 import { refreshSubscriptionStatus } from "@/lib/subscriptions";
+import { getStripe, priceIdForPlan, stripeConfigError } from "@/lib/stripe";
+import { publicAppUrl } from "@/lib/app-url";
 
 export type SubState = { error?: string; success?: string };
 
@@ -27,29 +29,45 @@ export async function subscribeAction(
     return { error: "You already have an active subscription." };
   }
 
-  const now = new Date();
-  const payload = {
-    plan: plan.id,
-    status: "ACTIVE",
-    amountPence: plan.amountPence,
-    renewalDate: addCadence(now, plan.id),
-    canceledAt: null,
-    mockPaymentId: `mock_${plan.id.toLowerCase()}_${Date.now()}`,
-  };
+  const configError = stripeConfigError();
+  if (configError) return { error: configError };
 
-  if (existing) {
-    await prisma.subscription.update({
-      where: { id: existing.id },
-      data: payload,
+  const priceId = priceIdForPlan(plan.id);
+  if (!priceId) return { error: stripeConfigError() ?? "Stripe price is missing." };
+
+  const origin = await publicAppUrl();
+  let checkoutUrl: string | null = null;
+  try {
+    const checkout = await getStripe().checkout.sessions.create({
+      mode: "subscription",
+      client_reference_id: session.id,
+      line_items: [{ price: priceId, quantity: 1 }],
+      success_url: `${origin}/subscribe/success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${origin}/subscribe?canceled=1`,
+      metadata: { userId: session.id, plan: plan.id },
+      subscription_data: {
+        metadata: { userId: session.id, plan: plan.id },
+      },
+      ...(existing?.stripeCustomerId
+        ? { customer: existing.stripeCustomerId }
+        : { customer_email: session.email }),
     });
-  } else {
-    await prisma.subscription.create({
-      data: { userId: session.id, ...payload },
-    });
+    checkoutUrl = checkout.url;
+  } catch (error) {
+    console.error("subscribeAction checkout.sessions.create failed", error);
+    return {
+      error:
+        "Could not start Stripe Checkout. No payment was taken and no plan was activated.",
+    };
   }
 
-  revalidatePath("/dashboard");
-  redirect("/dashboard?subscribed=1");
+  if (!checkoutUrl) {
+    return {
+      error: "Stripe did not return a checkout URL. No payment was taken and no plan was activated.",
+    };
+  }
+
+  redirect(checkoutUrl);
 }
 
 export async function cancelSubscriptionAction(): Promise<SubState> {
@@ -59,6 +77,18 @@ export async function cancelSubscriptionAction(): Promise<SubState> {
   if (!sub || sub.status !== "ACTIVE") {
     return { error: "There is no active subscription to cancel." };
   }
+
+  if (sub.stripeSubscriptionId && process.env.STRIPE_SECRET_KEY?.startsWith("sk_")) {
+    try {
+      await getStripe().subscriptions.update(sub.stripeSubscriptionId, {
+        cancel_at_period_end: true,
+      });
+    } catch (error) {
+      console.error("cancelSubscriptionAction stripe update failed", error);
+      return { error: "Stripe could not schedule the cancellation. Your plan is still active." };
+    }
+  }
+
   await prisma.subscription.update({
     where: { id: sub.id },
     data: { canceledAt: new Date() },

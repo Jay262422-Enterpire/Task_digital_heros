@@ -7,13 +7,13 @@ The look leads with charitable impact — dark, editorial, gold and rose — not
 ## What you can do
 
 - Browse the homepage, charity directory (search + filter), and draw rules without an account
-- Sign up, pick a charity (10%+ of the fee), then subscribe monthly (£12) or yearly (£108)
+- Sign up, pick a charity (10%+ of the fee), then subscribe monthly (£12) or yearly (£108) via **Stripe Checkout**
 - Log a rolling window of five Stableford scores (1–45, one per date)
 - Sit in a monthly draw whose ticket *is* those five scores
 - Upload winner proof; admins verify and mark payouts paid
 - Admins manage users, scores, subscriptions, charities, draw simulation/publish, winners, and reports
 
-Payments are a **mock Stripe** checkout so the slice runs without PCI keys. Prisma talks to **PostgreSQL** (Supabase on Vercel). SQLite is no longer supported.
+Payments use **Stripe Checkout** (hosted). The click does not activate a plan — `checkout.session.completed` (and related subscription/invoice events) does. Without Stripe keys, subscribe shows an error instead of a fake success. Prisma talks to **PostgreSQL** (Supabase on Vercel).
 
 ## Run locally
 
@@ -52,4 +52,4 @@ Riley already has a verified, paid 4-match from August. Alex is lapsed.
 
 ## Stack
 
-Next.js 16 (App Router) · TypeScript · Tailwind v4 · shadcn/ui · Prisma · PostgreSQL · jose sessions · bcryptjs
+Next.js 16 (App Router) · TypeScript · Tailwind v4 · shadcn/ui · Prisma · PostgreSQL · jose sessions · bcryptjs · Stripe Checkout
